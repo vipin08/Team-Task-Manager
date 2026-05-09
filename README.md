@@ -91,7 +91,7 @@ Role-Based Protected Routes
 
 The application is deployed and accessible online using:
 
-Railway
+Vercel
 
 # Installation & Setup
 
