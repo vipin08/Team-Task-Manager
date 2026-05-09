@@ -1,6 +1,6 @@
 import React, { useEffect } from "react"
 import { useForm } from "react-hook-form"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import Textbox from "../components/Textbox"
 import Button from "../components/Button"
 import { useSelector, useDispatch } from "react-redux"
@@ -115,6 +115,18 @@ const Login = () => {
                                     className="w-full h-10 bg-blue-700 text-white rounded-full"
                                 />
                             )}
+                        </div>
+
+                        <div className="text-center">
+                            <p className="text-gray-600">
+                                Don't have an account?{" "}
+                                <Link
+                                    to="/signup"
+                                    className="text-blue-600 font-semibold hover:underline"
+                                >
+                                    Sign up here
+                                </Link>
+                            </p>
                         </div>
                     </form>
                 </div>

@@ -169,7 +169,7 @@ const Dashboard = () => {
         )
     }
 
-    const totals = data?.tasks
+    const totals = data?.tasks || {}
 
     const stats = [
         {
@@ -182,23 +182,23 @@ const Dashboard = () => {
         {
             _id: "2",
             label: "COMPLTED TASK",
-            total: totals["completed"] || 0,
+            total: totals?.["completed"] || 0,
             icon: <MdAdminPanelSettings />,
             bg: "bg-[#0f766e]",
         },
         {
             _id: "3",
             label: "TASK IN PROGRESS ",
-            total: totals["in progress"] || 0,
+            total: totals?.["in progress"] || 0,
             icon: <LuClipboardEdit />,
             bg: "bg-[#f59e0b]",
         },
         {
             _id: "4",
             label: "TODOS",
-            total: totals["todo"],
+            total: totals?.["todo"] || 0,
             icon: <FaArrowsToDot />,
-            bg: "bg-[#be185d]" || 0,
+            bg: "bg-[#be185d]",
         },
     ]
 
@@ -242,17 +242,29 @@ const Dashboard = () => {
                 <h4 className="text-xl text-gray-600 font-semibold">
                     Chart by Priority
                 </h4>
-                <Chart data={data?.graphData} />
+                {data?.graphData ? <Chart data={data?.graphData} /> : <p className="text-gray-500">No chart data available</p>}
             </div>
 
             <div className="w-full flex flex-col md:flex-row gap-4 2xl:gap-10 py-8">
                 {/* /left */}
 
-                <TaskTable tasks={data?.last10Task} />
+                {data?.last10Task && data.last10Task.length > 0 ? (
+                    <TaskTable tasks={data?.last10Task} />
+                ) : (
+                    <div className="w-full md:w-2/3 bg-white p-4 rounded shadow-md">
+                        <p className="text-gray-500">No tasks yet</p>
+                    </div>
+                )}
 
                 {/* /right */}
 
-                <UserTable users={data?.users} />
+                {data?.users && data.users.length > 0 ? (
+                    <UserTable users={data?.users} />
+                ) : (
+                    <div className="w-full md:w-1/3 bg-white p-4 rounded shadow-md">
+                        <p className="text-gray-500">No users found</p>
+                    </div>
+                )}
             </div>
         </div>
     )

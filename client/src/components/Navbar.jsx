@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import { MdOutlineSearch } from "react-icons/md"
 import { useDispatch, useSelector } from "react-redux"
 import { setOpenSidebar } from "../redux/slices/authSlice"
@@ -8,6 +8,12 @@ import NotificationPanel from "./NotificationPanel"
 const Navbar = () => {
     const { user } = useSelector((state) => state.auth)
     const dispatch = useDispatch()
+    const [searchQuery, setSearchQuery] = React.useState("")
+
+    const handleSearch = (e) => {
+        setSearchQuery(e.target.value)
+        // Search functionality can be expanded here if needed
+    }
 
     return (
         <div className="flex justify-between items-center bg-white px-4 py-3 2xl:py-4 sticky z-10 top-0">
@@ -25,6 +31,8 @@ const Navbar = () => {
                     <input
                         type="text"
                         placeholder="Search...."
+                        value={searchQuery}
+                        onChange={handleSearch}
                         className="flex-1 outline-none bg-transparent placeholder:text-gray-500 text-gray-800"
                     />
                 </div>

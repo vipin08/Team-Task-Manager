@@ -57,6 +57,14 @@ const Table = ({ tasks }) => {
         }
     }
 
+    if (!tasks || tasks.length === 0) {
+        return (
+            <div className="w-full py-10 text-center text-gray-500">
+                <p>No tasks available</p>
+            </div>
+        )
+    }
+
     const TableHeader = () => (
         <thead className="w-full border-b border-gray-300">
             <tr className="w-full text-black  text-left">

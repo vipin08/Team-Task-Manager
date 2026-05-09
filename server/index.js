@@ -4,12 +4,9 @@ import dotenv from "dotenv"
 import express from "express"
 import morgan from "morgan"
 import { errorHandler, routeNotFound } from "./middlewares/errorMiddleware.js"
-import { dbConnection } from "./utils/index.js"
 import routes from "./routes/index.js"
 
 dotenv.config()
-
-dbConnection()
 
 const PORT = process.env.PORT || 5000
 

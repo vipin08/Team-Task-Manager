@@ -8,11 +8,13 @@ import { Toaster } from "sonner"
 import Navbar from "./components/Navbar"
 import Sidebar from "./components/Sidebar"
 import Login from "./pages/Login"
+import Signup from "./pages/Signup"
 import TaskDetails from "./pages/TaskDetails"
 import Tasks from "./pages/Tasks"
 import Trash from "./pages/Trash"
 import Users from "./pages/Users"
 import Dashboard from "./pages/Dashboard"
+import Settings from "./pages/Settings"
 import { setOpenSidebar } from "./redux/slices/authSlice"
 
 function Layout() {
@@ -109,10 +111,12 @@ function App() {
                     <Route path="/todo/:status" element={<Tasks />} />
                     <Route path="/team" element={<Users />} />
                     <Route path="/trashed" element={<Trash />} />
+                    <Route path="/settings" element={<Settings />} />
                     <Route path="/task/:id" element={<TaskDetails />} />
                 </Route>
 
                 <Route path="/log-in" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
             </Routes>
 
             <Toaster richColors />

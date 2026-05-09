@@ -59,21 +59,19 @@ export const duplicateTask = async (req, res) => {
         const task = await Task.findById(id)
 
         const newTask = await Task.create({
-            ...task,
             title: task.title + " - Duplicate",
+            team: task.team,
+            subTasks: task.subTasks,
+            assets: task.assets,
+            priority: task.priority,
+            stage: task.stage,
+            date: task.date,
+            activities: task.activities,
         })
-
-        newTask.team = task.team
-        newTask.subTasks = task.subTasks
-        newTask.assets = task.assets
-        newTask.priority = task.priority
-        newTask.stage = task.stage
-
-        await newTask.save()
 
         //alert users of the task
         let text = "New task has been assigned to you"
-        if (task.team.length > 1) {
+        if (task.team && task.team.length > 1) {
             text = text + ` and ${task.team.length - 1} others.`
         }
 
@@ -81,7 +79,9 @@ export const duplicateTask = async (req, res) => {
             text +
             ` The task priority is set a ${
                 task.priority
-            } priority, so check and act accordingly. The task date is ${task.date.toDateString()}. Thank you!!!`
+            } priority, so check and act accordingly. The task date is ${new Date(
+                task.date
+            ).toDateString()}. Thank you!!!`
 
         await Notice.create({
             team: task.team,
@@ -111,11 +111,12 @@ export const postTaskActivity = async (req, res) => {
             type,
             activity,
             by: userId,
+            date: new Date().toISOString(),
         }
 
-        task.activities.push(data)
-
-        await task.save()
+        const updatedTask = await Task.findByIdAndUpdate(id, {
+            activities: [...(task.activities || []), data],
+        })
 
         res.status(200).json({
             status: true,
@@ -131,32 +132,19 @@ export const dashboardStatistics = async (req, res) => {
     try {
         const { userId, isAdmin } = req.user
 
-        const allTasks = isAdmin
-            ? await Task.find({
-                  isTrashed: false,
-              })
-                  .populate({
-                      path: "team",
-                      select: "name role title email",
-                  })
-                  .sort({ _id: -1 })
-            : await Task.find({
-                  isTrashed: false,
-                  team: { $all: [userId] },
-              })
-                  .populate({
-                      path: "team",
-                      select: "name role title email",
-                  })
-                  .sort({ _id: -1 })
+        const allTasks = await Task.find({ isTrashed: false })
 
-        const users = await User.find({ isActive: true })
-            .select("name title role isAdmin createdAt")
-            .limit(10)
-            .sort({ _id: -1 })
+        // Show all tasks on dashboard
+        const filteredTasks = allTasks
 
-        //   group task by stage and calculate counts
-        const groupTaskks = allTasks.reduce((result, task) => {
+        const users = await User.find()
+        const usersMap = users.reduce((acc, user) => {
+            acc[user._id] = user
+            return acc
+        }, {})
+
+        // Group task by stage and calculate counts
+        const groupTaskks = filteredTasks.reduce((result, task) => {
             const stage = task.stage
 
             if (!result[stage]) {
@@ -170,7 +158,7 @@ export const dashboardStatistics = async (req, res) => {
 
         // Group tasks by priority
         const groupData = Object.entries(
-            allTasks.reduce((result, task) => {
+            filteredTasks.reduce((result, task) => {
                 const { priority } = task
 
                 result[priority] = (result[priority] || 0) + 1
@@ -178,14 +166,19 @@ export const dashboardStatistics = async (req, res) => {
             }, {})
         ).map(([name, total]) => ({ name, total }))
 
-        // calculate total tasks
-        const totalTasks = allTasks?.length
-        const last10Task = allTasks?.slice(0, 10)
+        // calculate total tasks and enrich with user data
+        const totalTasks = filteredTasks?.length
+        const last10Task = filteredTasks?.slice(0, 10).map((task) => ({
+            ...task,
+            team: task.team
+                ? task.team.map((id) => usersMap[id] || { _id: id })
+                : [],
+        }))
 
         const summary = {
             totalTasks,
             last10Task,
-            users: isAdmin ? users : [],
+            users: isAdmin ? users.filter((u) => u.isActive).slice(0, 10) : [],
             tasks: groupTaskks,
             graphData: groupData,
         }
@@ -205,24 +198,29 @@ export const getTasks = async (req, res) => {
     try {
         const { stage, isTrashed } = req.query
 
-        let query = { isTrashed: isTrashed ? true : false }
+        let allTasks = await Task.find({ isTrashed: isTrashed ? true : false })
 
         if (stage) {
-            query.stage = stage
+            allTasks = allTasks.filter((t) => t.stage === stage)
         }
 
-        let queryResult = Task.find(query)
-            .populate({
-                path: "team",
-                select: "name title email",
-            })
-            .sort({ _id: -1 })
+        // Get user data for team members
+        const users = await User.find()
+        const usersMap = users.reduce((acc, user) => {
+            acc[user._id] = user
+            return acc
+        }, {})
 
-        const tasks = await queryResult
+        const tasks = allTasks.map((task) => ({
+            ...task,
+            team: task.team
+                ? task.team.map((id) => usersMap[id] || { _id: id })
+                : [],
+        }))
 
         res.status(200).json({
             status: true,
-            tasks,
+            tasks: tasks.sort((a, b) => b._id - a._id),
         })
     } catch (error) {
         console.log(error)
@@ -235,18 +233,34 @@ export const getTask = async (req, res) => {
         const { id } = req.params
 
         const task = await Task.findById(id)
-            .populate({
-                path: "team",
-                select: "name title role email",
-            })
-            .populate({
-                path: "activities.by",
-                select: "name",
-            })
+
+        if (!task) {
+            return res.status(404).json({ status: false, message: "Task not found" })
+        }
+
+        // Get user data
+        const users = await User.find()
+        const usersMap = users.reduce((acc, user) => {
+            acc[user._id] = user
+            return acc
+        }, {})
+
+        const enrichedTask = {
+            ...task,
+            team: task.team
+                ? task.team.map((id) => usersMap[id] || { _id: id })
+                : [],
+            activities: task.activities
+                ? task.activities.map((act) => ({
+                      ...act,
+                      by: usersMap[act.by] || { _id: act.by },
+                  }))
+                : [],
+        }
 
         res.status(200).json({
             status: true,
-            task,
+            task: enrichedTask,
         })
     } catch (error) {
         console.log(error)
@@ -268,9 +282,9 @@ export const createSubTask = async (req, res) => {
 
         const task = await Task.findById(id)
 
-        task.subTasks.push(newSubTask)
-
-        await task.save()
+        const updatedTask = await Task.findByIdAndUpdate(id, {
+            subTasks: [...(task.subTasks || []), newSubTask],
+        })
 
         res.status(200).json({
             status: true,
@@ -287,16 +301,14 @@ export const updateTask = async (req, res) => {
         const { id } = req.params
         const { title, date, team, stage, priority, assets } = req.body
 
-        const task = await Task.findById(id)
-
-        task.title = title
-        task.date = date
-        task.priority = priority.toLowerCase()
-        task.assets = assets
-        task.stage = stage.toLowerCase()
-        task.team = team
-
-        await task.save()
+        const updatedTask = await Task.findByIdAndUpdate(id, {
+            title,
+            date,
+            priority: priority.toLowerCase(),
+            assets,
+            stage: stage.toLowerCase(),
+            team,
+        })
 
         res.status(200).json({
             status: true,
@@ -312,11 +324,9 @@ export const trashTask = async (req, res) => {
     try {
         const { id } = req.params
 
-        const task = await Task.findById(id)
-
-        task.isTrashed = true
-
-        await task.save()
+        const updatedTask = await Task.findByIdAndUpdate(id, {
+            isTrashed: true,
+        })
 
         res.status(200).json({
             status: true,
@@ -339,13 +349,11 @@ export const deleteRestoreTask = async (req, res) => {
             await Task.deleteMany({ isTrashed: true })
         } else if (actionType === "restore") {
             const resp = await Task.findById(id)
-
-            resp.isTrashed = false
-            resp.save()
+            await Task.findByIdAndUpdate(id, { isTrashed: false })
         } else if (actionType === "restoreAll") {
             await Task.updateMany(
                 { isTrashed: true },
-                { $set: { isTrashed: false } }
+                { isTrashed: false }
             )
         }
 

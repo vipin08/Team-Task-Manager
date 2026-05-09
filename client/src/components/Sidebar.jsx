@@ -97,10 +97,14 @@ const Sidebar = () => {
             </div>
 
             <div className="">
-                <button className="w-full flex gap-2 p-2 items-center text-lg text-gray-800">
+                <Link
+                    to="/settings"
+                    onClick={closeSidebar}
+                    className="w-full flex gap-2 px-3 py-2 rounded-full items-center text-gray-800 text-base hover:bg-[#2564ed2d]"
+                >
                     <MdSettings />
                     <span>Settings</span>
-                </button>
+                </Link>
             </div>
         </div>
     )

@@ -1,7 +1,6 @@
-import { response } from "express"
 import User from "../models/user.js"
-import { createJWT } from "../utils/index.js"
 import Notice from "../models/notification.js"
+import { createJWT } from "../utils/index.js"
 
 export const registerUser = async (req, res) => {
     try {
@@ -28,9 +27,10 @@ export const registerUser = async (req, res) => {
         if (user) {
             isAdmin ? createJWT(res, user._id) : null
 
-            user.password = undefined
+            const userResponse = { ...user }
+            delete userResponse.password
 
-            res.status(201).json(user)
+            res.status(201).json(userResponse)
         } else {
             return res
                 .status(400)
@@ -67,9 +67,10 @@ export const loginUser = async (req, res) => {
         if (user && isMatch) {
             createJWT(res, user._id)
 
-            user.password = undefined
+            const userResponse = { ...user }
+            delete userResponse.password
 
-            res.status(200).json(user)
+            res.status(200).json(userResponse)
         } else {
             return res
                 .status(401)
@@ -84,7 +85,7 @@ export const loginUser = async (req, res) => {
 export const logoutUser = async (req, res) => {
     try {
         res.cookie("token", "", {
-            htttpOnly: true,
+            httpOnly: true,
             expires: new Date(0),
         })
 
@@ -97,25 +98,17 @@ export const logoutUser = async (req, res) => {
 
 export const getTeamList = async (req, res) => {
     try {
-        const users = await User.find().select("name title role email isActive")
+        const users = await User.find()
+        const teamList = users.map(u => ({
+            _id: u._id,
+            name: u.name,
+            title: u.title,
+            role: u.role,
+            email: u.email,
+            isActive: u.isActive
+        }))
 
-        res.status(200).json(users)
-    } catch (error) {
-        console.log(error)
-        return res.status(400).json({ status: false, message: error.message })
-    }
-}
-
-export const getNotificationsList = async (req, res) => {
-    try {
-        const { userId } = req.user
-
-        const notice = await Notice.find({
-            team: userId,
-            isRead: { $nin: [userId] },
-        }).populate("task", "title")
-
-        res.status(201).json(notice)
+        res.status(200).json(teamList)
     } catch (error) {
         console.log(error)
         return res.status(400).json({ status: false, message: error.message })
@@ -137,49 +130,25 @@ export const updateUserProfile = async (req, res) => {
         const user = await User.findById(id)
 
         if (user) {
-            user.name = req.body.name || user.name
-            user.title = req.body.title || user.title
-            user.role = req.body.role || user.role
+            const updatedData = {
+                name: req.body.name || user.name,
+                title: req.body.title || user.title,
+                role: req.body.role || user.role,
+            }
 
-            const updatedUser = await user.save()
+            const updatedUser = await User.findByIdAndUpdate(id, updatedData)
 
-            user.password = undefined
+            const userResponse = { ...updatedUser }
+            delete userResponse.password
 
             res.status(201).json({
                 status: true,
                 message: "Profile Updated Successfully.",
-                user: updatedUser,
+                user: userResponse,
             })
         } else {
             res.status(404).json({ status: false, message: "User not found" })
         }
-    } catch (error) {
-        console.log(error)
-        return res.status(400).json({ status: false, message: error.message })
-    }
-}
-
-export const markNotificationRead = async (req, res) => {
-    try {
-        const { userId } = req.user
-
-        const { isReadType, id } = req.query
-
-        if (isReadType === "all") {
-            await Notice.updateMany(
-                { team: userId, isRead: { $nin: [userId] } },
-                { $push: { isRead: userId } },
-                { new: true }
-            )
-        } else {
-            await Notice.findOneAndUpdate(
-                { _id: id, isRead: { $nin: [userId] } },
-                { $push: { isRead: userId } },
-                { new: true }
-            )
-        }
-
-        res.status(201).json({ status: true, message: "Done" })
     } catch (error) {
         console.log(error)
         return res.status(400).json({ status: false, message: error.message })
@@ -193,15 +162,11 @@ export const changeUserPassword = async (req, res) => {
         const user = await User.findById(userId)
 
         if (user) {
-            user.password = req.body.password
-
-            await user.save()
-
-            user.password = undefined
+            await User.findByIdAndUpdate(userId, { password: req.body.password })
 
             res.status(201).json({
                 status: true,
-                message: `Password chnaged successfully.`,
+                message: `Password changed successfully.`,
             })
         } else {
             res.status(404).json({ status: false, message: "User not found" })
@@ -219,14 +184,14 @@ export const activateUserProfile = async (req, res) => {
         const user = await User.findById(id)
 
         if (user) {
-            user.isActive = req.body.isActive //!user.isActive
-
-            await user.save()
+            const updatedUser = await User.findByIdAndUpdate(id, {
+                isActive: req.body.isActive,
+            })
 
             res.status(201).json({
                 status: true,
                 message: `User account has been ${
-                    user?.isActive ? "activated" : "disabled"
+                    updatedUser?.isActive ? "activated" : "disabled"
                 }`,
             })
         } else {
@@ -248,6 +213,46 @@ export const deleteUserProfile = async (req, res) => {
             status: true,
             message: "User deleted successfully",
         })
+    } catch (error) {
+        console.log(error)
+        return res.status(400).json({ status: false, message: error.message })
+    }
+}
+
+export const getNotificationsList = async (req, res) => {
+    try {
+        const { userId } = req.user
+        
+        // Get all notifications where user is in the team
+        const notifications = await Notice.find({ team: userId })
+        
+        res.status(200).json(notifications)
+    } catch (error) {
+        console.log(error)
+        return res.status(400).json({ status: false, message: error.message })
+    }
+}
+
+export const markNotificationRead = async (req, res) => {
+    try {
+        const { userId } = req.user
+        const { isReadType, id } = req.query
+        
+        if (isReadType === "one") {
+            // Mark single notification as read
+            const notification = await Notice.findByIdAndUpdate(id, 
+                { $push: { isRead: userId } },
+                { new: true }
+            )
+            res.status(201).json({ status: true, message: "Marked as read", notification })
+        } else if (isReadType === "all") {
+            // Mark all notifications as read for this user
+            const notifications = await Notice.updateMany(
+                { team: userId, isRead: { $nin: [userId] } },
+                { $push: { isRead: userId } }
+            )
+            res.status(201).json({ status: true, message: "All marked as read" })
+        }
     } catch (error) {
         console.log(error)
         return res.status(400).json({ status: false, message: error.message })

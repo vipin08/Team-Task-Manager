@@ -1,0 +1,12 @@
+[
+  {
+    "_id": "1778313495619",
+    "team": ["1778313043878"],
+    "text": "New task has been assigned to you The task priority is set a NORMAL priority, so check and act accordingly. The task date is Sat May 09 2026. Thank you!!!",
+    "task": "1778313495614",
+    "notiType": "alert",
+    "isRead": [],
+    "createdAt": "2026-05-09T07:58:15.619Z",
+    "updatedAt": "2026-05-09T07:58:15.619Z"
+  }
+]

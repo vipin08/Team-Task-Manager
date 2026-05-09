@@ -1,0 +1,22 @@
+[
+  {
+    "_id": "1778313495614",
+    "title": "Running",
+    "date": "2026-05-09",
+    "priority": "normal",
+    "stage": "todo",
+    "activities": [
+      {
+        "type": "assigned",
+        "activity": "New task has been assigned to you The task priority is set a NORMAL priority, so check and act accordingly. The task date is Sat May 09 2026. Thank you!!!",
+        "by": "1778313128853"
+      }
+    ],
+    "subTasks": [],
+    "assets": [],
+    "team": ["1778313043878"],
+    "isTrashed": false,
+    "createdAt": "2026-05-09T07:58:15.614Z",
+    "updatedAt": "2026-05-09T08:04:37.257Z"
+  }
+]

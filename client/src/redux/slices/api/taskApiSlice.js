@@ -13,11 +13,19 @@ export const taskApiSlice = apiSlice.injectEndpoints({
         }),
 
         getAllTask: builder.query({
-            query: ({ strQuery, isTrashed, search }) => ({
-                url: `${TASKS_URL}?stage=${strQuery}&isTrashed=${isTrashed}&search=${search}`,
-                method: "GET",
-                credentials: "include",
-            }),
+            query: ({ strQuery, isTrashed, search }) => {
+                let url = `${TASKS_URL}?`
+                const params = []
+                if (strQuery) params.push(`stage=${encodeURIComponent(strQuery)}`)
+                if (isTrashed) params.push(`isTrashed=${isTrashed}`)
+                if (search) params.push(`search=${encodeURIComponent(search)}`)
+                
+                return {
+                    url: url + params.join('&'),
+                    method: "GET",
+                    credentials: "include",
+                }
+            },
         }),
 
         createTask: builder.mutation({

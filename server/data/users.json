@@ -1,0 +1,28 @@
+[
+  {
+    "_id": "1778313043878",
+    "name": "John Doe",
+    "title": "Senior Developer",
+    "role": "Developer",
+    "email": "john@example.com",
+    "password": "$2a$10$uh1QnniX4PSfcWSPxuBcZuGW37Qprh0qz8xK8LXe7QyhZprYCHnEq",
+    "isAdmin": false,
+    "isActive": true,
+    "tasks": [],
+    "createdAt": "2026-05-09T07:50:43.942Z",
+    "updatedAt": "2026-05-09T07:50:43.942Z"
+  },
+  {
+    "_id": "1778313128853",
+    "name": "vipin",
+    "title": "Senior Developer",
+    "role": "Developer",
+    "email": "vipin@gmail.com",
+    "password": "$2a$10$vx4xYNYpY/xYeayBkQxxBe2a1WYoZMpcA6hzxDWbkwwJlr9LG1YXG",
+    "isAdmin": false,
+    "isActive": true,
+    "tasks": [],
+    "createdAt": "2026-05-09T07:52:09.040Z",
+    "updatedAt": "2026-05-09T07:52:09.040Z"
+  }
+]
